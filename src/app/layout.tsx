@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Nav from "@/components/nav";
+import Ask from "@/components/ask";
 import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="mx-auto max-w-6xl border-t border-line px-4 py-6 font-mono text-[11px] text-muted">
           Built by Paul Timofeev · onchain data from Robinhood Chain and Ethereum, refreshed daily · not investment advice
         </footer>
+        <Ask site="robinhood-earn" title="Robinhood Earn" suggestions={["How much is deposited in Robinhood Earn right now?", "How fast is stablecoin supply on Robinhood Chain growing?", "Where does Earn’s money actually go?"]} />
       </body>
     </html>
   );
