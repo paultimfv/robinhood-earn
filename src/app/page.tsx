@@ -21,10 +21,12 @@ export default async function Page() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="space-y-3">
-        <div className="font-mono text-[11px] uppercase tracking-wider text-muted">Research dashboard · data as of {String(lastDay).slice(0, 10)}</div>
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight">Robinhood Chain</h1>
-        <p className="max-w-3xl text-[13px] leading-relaxed text-ink-2">Stablecoins, activity, fees and capital on Robinhood Chain, read from Ethereum and Robinhood Chain RPC and Blockscout. DeFiLlama where marked.</p>
+      <header className="sec-h">
+        <h1 className="sec-t page-t">Robinhood Chain</h1>
+        <div>
+          <p className="sec-l">Stablecoins, activity, fees and capital on Robinhood Chain, read from Ethereum and Robinhood Chain RPC and Blockscout. DeFiLlama where marked.</p>
+          <p className="mt-3 text-[12px] text-muted">Research dashboard, data as of {String(lastDay).slice(0, 10)}</p>
+        </div>
       </header>
 
       <Section n="01" tone="rh" title="Stablecoins" lede="Onchain credit scales with the dollars onchain. Global supply is the model's top-line driver (DeFiLlama, all chains, USD-pegged); Robinhood Chain supply is read from each token's totalSupply().">

@@ -39,7 +39,7 @@ function ThemeToggle() {
   // shows the mode you'd switch to: moon in light, sun in dark
   return (
     <button onClick={flip} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} title={theme === "dark" ? "Light mode" : "Dark mode"}
-      className="grid h-8 w-8 place-items-center rounded-[3px] border border-line text-ink-2 hover:border-line-strong hover:text-ink">
+      className="grid h-8 w-8 place-items-center rounded-full border border-line text-ink-2 hover:border-line-strong hover:text-ink">
       {theme === null ? null : theme === "dark" ? sun : moon}
     </button>
   );
@@ -50,15 +50,15 @@ export default function Nav() {
   return (
     <nav className="sticky top-0 z-20 border-b border-line bg-page/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 text-sm">
-        <span className="py-3 font-mono text-[12px] font-medium uppercase tracking-wider text-ink">
-          Robinhood Chain × Earn
-        </span>
+        <a href="/" className="py-3 font-[family-name:var(--font-display)] text-[16px] font-bold tracking-[-0.03em] text-ink">
+          <span className="hl">Robinhood</span> Chain × Earn
+        </a>
         <div className="flex gap-5">
           {nav.map((n) => {
             const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href}
-                className={`-mb-px border-b-2 py-3 ${on ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}>
+                className={`-mb-px border-b-2 py-3 ${on ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}>
                 {n.label}
               </Link>
             );

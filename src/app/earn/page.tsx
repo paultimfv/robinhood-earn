@@ -15,10 +15,12 @@ export default async function EarnPage() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="space-y-3">
-        <div className="font-mono text-[11px] uppercase tracking-wider text-muted">Research dashboard · data as of {String(lastDay ?? "").slice(0, 10)}</div>
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight">Robinhood Earn</h1>
-        <p className="max-w-3xl text-[13px] leading-relaxed text-ink-2">Robinhood&apos;s onchain lending product: a normal app in front, a Steakhouse-curated Morpho vault underneath. Users, flows, and who borrows against what, read from Robinhood Chain.</p>
+      <header className="sec-h">
+        <h1 className="sec-t page-t">Robinhood Earn</h1>
+        <div>
+          <p className="sec-l">Robinhood&apos;s onchain lending product: a normal app in front, a Steakhouse-curated Morpho vault underneath. Users, flows, and who borrows against what, read from Robinhood Chain.</p>
+          <p className="mt-3 text-[12px] text-muted">Research dashboard, data as of {String(lastDay ?? "").slice(0, 10)}</p>
+        </div>
       </header>
 
       <Section n="01" tone="rh" title="Robinhood Earn: the distribution channel" lede="Steakhouse USDG vault (steakUSDG) on Robinhood Chain, the contract behind Robinhood Earn. Users = distinct share owners.">
@@ -57,17 +59,17 @@ export default async function EarnPage() {
 
 function Track({ tag, title, note, flow, foot, accent }: { tag: string; title: string; note: string; flow: string[]; foot: string; accent?: boolean }) {
   return (
-    <div className={`rounded-[3px] border bg-surface p-4 ${accent ? "border-rh-ink" : "border-line"}`}>
+    <div className="fig" style={accent ? { borderTopWidth: 3, borderTopColor: "var(--accent)" } : undefined}>
       <div className="flex items-baseline gap-2">
-        <span className={`font-mono text-[10.5px] uppercase tracking-wider ${accent ? "text-rh-ink" : "text-muted"}`}>{tag}</span>
-        <span className="text-[13px] font-medium text-ink">{title}</span>
+        <span className={`text-[11.5px] font-medium ${accent ? "text-rh-ink" : "text-muted"}`}>{tag}</span>
+        <span className="text-[14px] font-semibold text-ink">{title}</span>
         <span className="text-[11.5px] text-muted">· {note}</span>
       </div>
       <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
         {flow.map((f, i) => (
           <li key={f} className="flex items-center gap-1.5">
-            {i > 0 && <span className="font-mono text-muted">→</span>}
-            <span className="rounded-[3px] border border-line bg-wash px-2 py-1 text-ink">{f}</span>
+            {i > 0 && <span className="text-muted">→</span>}
+            <span className="rounded-full bg-surface px-2.5 py-1 text-ink">{f}</span>
           </li>
         ))}
       </ol>

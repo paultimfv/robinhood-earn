@@ -3,7 +3,7 @@ import { protocolStats, stableSupply, tokens, type ProtocolStats, type TokenStat
 import { Counter, Counters, Card, Section, Note, CategoryBars } from "@/components/charts";
 import { fmtUsd, fmtPct } from "@/lib/fmt";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 const last = <T,>(a: T[]) => a[a.length - 1];
 
@@ -55,20 +55,20 @@ export default async function WhoGetsPaid() {
 
   return (
     <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="space-y-3">
-        <div className="font-mono text-[11px] uppercase tracking-wider text-muted">Research dashboard · protocol data refreshed hourly</div>
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight">Who gets paid</h1>
-        <p className="max-w-3xl text-[13px] leading-relaxed text-ink-2">
-          Everyone in the Robinhood Earn stack: what they do, how Earn pays them, and whether there is a token to own.
-          Earn&apos;s collateral mix is read onchain; protocol fees, revenue and TVL come from DeFiLlama; prices from CoinGecko.
-        </p>
+      <header className="sec-h">
+        <h1 className="sec-t page-t">Who gets paid</h1>
+        <div>
+          <p className="sec-l">Everyone in the Robinhood Earn stack: what they do, how Earn pays them, and whether there is a token to own.
+          Earn&apos;s collateral mix is read onchain; protocol fees, revenue and TVL come from DeFiLlama; prices from CoinGecko.</p>
+          <p className="mt-3 text-[12px] text-muted">Research dashboard, protocol data refreshed hourly</p>
+        </div>
       </header>
 
       <Section n="01" tone="rh" title="The stack" lede="From the app the customer sees down to the collateral borrowers post. Most of the stack has no token; where there is one, Earn usually pays it indirectly.">
-        <div className="overflow-x-auto rounded-[3px] border border-line bg-surface">
+        <div className="fig overflow-x-auto">
           <table className="w-full min-w-[860px] text-[12.5px]">
             <thead>
-              <tr className="border-b border-line-strong text-left font-mono text-[10.5px] uppercase tracking-wider text-muted">
+              <tr className="border-b border-ink text-left text-[11.5px] font-medium text-muted">
                 <th className="px-4 py-2 font-normal">Layer</th><th className="py-2 pr-4 font-normal">Who</th><th className="py-2 pr-4 font-normal">Role in Earn</th>
                 <th className="py-2 pr-4 font-normal">Token</th><th className="py-2 pr-4 text-right font-normal">Share of Earn</th><th className="py-2 pr-4 font-normal">How Earn pays them</th>
               </tr>
@@ -76,13 +76,13 @@ export default async function WhoGetsPaid() {
             <tbody>
               {rows.map(({ e, earn }) => (
                 <tr key={e.name} className="border-t border-line align-top hover:bg-wash">
-                  <td className="whitespace-nowrap px-4 py-2.5 font-mono text-[11px] uppercase tracking-wider text-muted">{e.layer}</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-[12px] text-muted">{e.layer}</td>
                   <td className="whitespace-nowrap py-2.5 pr-4 font-medium text-ink">{e.name}</td>
                   <td className="py-2.5 pr-4 text-ink-2">{e.role}</td>
-                  <td className="whitespace-nowrap py-2.5 pr-4 font-mono text-ink">{e.token}</td>
-                  <td className="py-2.5 pr-4 text-right font-mono tabular-nums text-ink">{earn == null ? "" : `${e.collateral} ${fmtPct(earn)}`}</td>
+                  <td className="whitespace-nowrap py-2.5 pr-4 text-ink">{e.token}</td>
+                  <td className="py-2.5 pr-4 text-right num text-ink">{earn == null ? "" : `${e.collateral} ${fmtPct(earn)}`}</td>
                   <td className="py-2.5 pr-4 text-ink-2">
-                    <span className={`mr-1.5 inline-block rounded-[2px] px-1.5 py-px font-mono text-[10px] uppercase tracking-wider ${e.direct === "no" ? "bg-wash text-muted" : "bg-rh/25 text-ink"}`}>
+                    <span className={`mr-1.5 inline-block rounded-[2px] px-1.5 py-px text-[10.5px] font-semibold tracking-wider ${e.direct === "no" ? "bg-wash text-muted" : "bg-rh/25 text-ink"}`}>
                       {e.direct === "no" ? "No token link" : "Indirect"}
                     </span>
                     {e.paid}
@@ -107,10 +107,10 @@ export default async function WhoGetsPaid() {
       </Section>
 
       <Section n="03" tone="rh" title="By the numbers" lede="The players with a token, side by side on the same date. Fees are what users pay the protocol; revenue is what the protocol keeps, as DeFiLlama defines it for each.">
-        <div className="overflow-x-auto rounded-[3px] border border-line bg-surface">
+        <div className="fig overflow-x-auto">
           <table className="w-full min-w-[860px] text-[12.5px]">
             <thead>
-              <tr className="border-b border-line-strong font-mono text-[10.5px] uppercase tracking-wider text-muted">
+              <tr className="border-b border-ink text-[11.5px] font-medium text-muted">
                 <th className="px-4 py-2 text-left font-normal">Who</th><th className="py-2 pr-4 text-left font-normal">Token</th>
                 <th className="py-2 pr-4 text-right font-normal">Price</th><th className="py-2 pr-4 text-right font-normal">1y</th>
                 <th className="py-2 pr-4 text-right font-normal">Market cap</th><th className="py-2 pr-4 text-right font-normal">FDV</th>
@@ -118,7 +118,7 @@ export default async function WhoGetsPaid() {
                 <th className="py-2 pr-4 text-right font-normal">Mcap ÷ ann. revenue</th><th className="py-2 pr-4 text-right font-normal">TVL</th>
               </tr>
             </thead>
-            <tbody className="font-mono tabular-nums">
+            <tbody className="num">
               {withToken.map(({ e, s, t }) => (
                 <tr key={e.name} className="border-t border-line hover:bg-wash">
                   <td className="px-4 py-2 font-sans font-medium text-ink">{e.name}</td>
