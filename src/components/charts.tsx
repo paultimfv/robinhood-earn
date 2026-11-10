@@ -25,7 +25,7 @@ const ENTITY = { light: { maple: "#f26b3a", rh: "#6e9e00" }, dark: { maple: "#e8
 const entityOf = (k: string): "maple" | "rh" | null => (k === "syrupUSDG" ? "maple" : k === "USDG" ? "rh" : null);
 
 export type Tone = "maple" | "rh";
-const ToneCtx = createContext<Tone>("maple");
+const ToneCtx = createContext<Tone>("rh");
 /** sets the chart palette (and section accent) for everything inside */
 export function ToneScope({ tone, children }: { tone: Tone; children: React.ReactNode }) {
   return <ToneCtx.Provider value={tone}>{children}</ToneCtx.Provider>;

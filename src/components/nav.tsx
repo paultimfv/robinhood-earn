@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const nav = [
-  { href: "/", label: "Robinhood Chain" },
+  { href: "/", label: "Overview" },
+  { href: "/chain", label: "Robinhood Chain" },
   { href: "/earn", label: "Robinhood Earn" },
   { href: "/who-gets-paid", label: "Who gets paid" },
 ];
@@ -49,22 +50,22 @@ export default function Nav() {
   const path = usePathname();
   return (
     <nav className="sticky top-0 z-20 border-b border-line bg-page/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center gap-6 px-4 text-sm">
-        <a href="/" className="py-3 font-[family-name:var(--font-display)] text-[16px] font-bold tracking-[-0.03em] text-ink">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 px-4 text-sm">
+        <a href="/" className="shrink-0 py-3 font-[family-name:var(--font-display)] text-[16px] font-bold tracking-[-0.03em] text-ink">
           <span className="hl">Robinhood</span> Chain × Earn
         </a>
-        <div className="flex gap-5">
+        <div className="order-last -mt-1 flex w-full gap-5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:order-none sm:mt-0 sm:w-auto">
           {nav.map((n) => {
             const on = n.href === "/" ? path === "/" : path.startsWith(n.href);
             return (
               <Link key={n.href} href={n.href}
-                className={`-mb-px border-b-2 py-3 ${on ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}>
+                className={`-mb-px border-b-2 py-2.5 sm:py-3 ${on ? "border-ink text-ink" : "border-transparent text-muted hover:text-ink"}`}>
                 {n.label}
               </Link>
             );
           })}
         </div>
-        <div className="ml-auto"><ThemeToggle /></div>
+        <div className="ml-auto shrink-0"><ThemeToggle /></div>
       </div>
     </nav>
   );

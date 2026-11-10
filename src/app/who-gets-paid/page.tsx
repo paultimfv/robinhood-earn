@@ -1,6 +1,6 @@
 import { earnRwaShare, earnAllocation } from "@/lib/queries";
 import { protocolStats, stableSupply, tokens, type ProtocolStats, type TokenStats } from "@/lib/llama";
-import { Counter, Counters, Card, Section, Note, CategoryBars } from "@/components/charts";
+import { Card, CategoryBars } from "@/components/charts";
 import { fmtUsd, fmtPct } from "@/lib/fmt";
 
 export const revalidate = 300;
@@ -54,17 +54,15 @@ export default async function WhoGetsPaid() {
   const top2 = [...held].sort((a, b) => Number(b.share) - Number(a.share)).slice(0, 2);
 
   return (
-    <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="sec-h">
-        <h1 className="sec-t page-t">Who gets paid</h1>
-        <div>
-          <p className="sec-l">Everyone in the Robinhood Earn stack: what they do, how Earn pays them, and whether there is a token to own.
-          Earn&apos;s collateral mix is read onchain; protocol fees, revenue and TVL come from DeFiLlama; prices from CoinGecko.</p>
-          <p className="mt-3 text-[12px] text-muted">Research dashboard, protocol data refreshed hourly</p>
-        </div>
+    <div className="page page-solo">
+    <main className="page-main">
+      <header className="hero">
+        <h1 className="hero-t">Who gets paid</h1>
+        <p className="hero-l">Everyone in the Robinhood Earn stack: what they do, how Earn pays them, and whether there is a token to own.</p>
+        <p className="hero-s"><span className="live">Refreshed every 5 minutes</span><span>Robinhood Chain, DeFiLlama, CoinGecko</span></p>
       </header>
 
-      <Section n="01" tone="rh" title="The stack" lede="From the app the customer sees down to the collateral borrowers post. Most of the stack has no token; where there is one, Earn usually pays it indirectly.">
+      <section className="blk"><h2 className="blk-t">The stack</h2><p className="blk-l">From the app the customer sees down to the collateral borrowers post. Most of the stack has no token; where there is one, Earn usually pays it indirectly.</p>
         <div className="fig overflow-x-auto">
           <table className="w-full min-w-[860px] text-[12.5px]">
             <thead>
@@ -92,21 +90,21 @@ export default async function WhoGetsPaid() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </section>
 
-      <Section n="02" tone="rh" title="The collateral side" lede="Earn users supply USDG. Borrowers post a yield-bearing token to borrow it, so Earn's growth shows up as demand for these tokens.">
-        <Counters cols="md:grid-cols-4">
-          <Counter label="Robinhood Earn TVL" value={usd(earnTvl)} sub="Steakhouse USDG vault, onchain" />
-          <Counter label="USDG supply, all chains" value={usd(usdg.now)} sub={usdg.yearAgo ? `${pct((usdg.now! / usdg.yearAgo - 1) * 100)} year on year · DeFiLlama` : "DeFiLlama"} />
-          <Counter label="USDe supply, all chains" value={usd(usde.now)} sub={usde.yearAgo ? `${pct((usde.now! / usde.yearAgo - 1) * 100)} year on year · DeFiLlama` : "DeFiLlama"} />
-          <Counter label="Two largest collaterals" value={fmtPct(top2.reduce((a, r) => a + Number(r.share), 0))} sub={`${top2.map((r) => `${r.collateral} ${fmtPct(Number(r.share))}`).join(" + ")} of Earn`} />
-        </Counters>
-        <Card wide tone="maple" title="Robinhood Earn allocation by collateral" sub="USDG lent against each collateral today · onchain">
+      <section className="blk"><h2 className="blk-t">The collateral side</h2><p className="blk-l">Earn users supply USDG. Borrowers post a yield-bearing token to borrow it, so Earn&apos;s growth shows up as demand for these tokens.</p>
+        <dl className="facts">
+          <div><dt>Robinhood Earn deposits</dt><dd>{usd(earnTvl)}</dd></div>
+          <div><dt>USDG supply, all chains</dt><dd>{usd(usdg.now)}{usdg.yearAgo ? <span className="ml-2 text-[12px] font-normal text-muted">{pct((usdg.now! / usdg.yearAgo - 1) * 100)} 1Y</span> : null}</dd></div>
+          <div><dt>USDe supply, all chains</dt><dd>{usd(usde.now)}{usde.yearAgo ? <span className="ml-2 text-[12px] font-normal text-muted">{pct((usde.now! / usde.yearAgo - 1) * 100)} 1Y</span> : null}</dd></div>
+          <div><dt>Two largest collaterals</dt><dd>{fmtPct(top2.reduce((a, r) => a + Number(r.share), 0))}<span className="ml-2 text-[12px] font-normal text-muted">{top2.map((r) => r.collateral).join(" + ")}</span></dd></div>
+        </dl>
+        <div><Card tone="maple" title="Earn by collateral" sub="USDG lent against each collateral today, onchain">
           <CategoryBars data={held} x="collateral" y="allocated_usdg" />
-        </Card>
-      </Section>
+        </Card></div>
+      </section>
 
-      <Section n="03" tone="rh" title="By the numbers" lede="The players with a token, side by side on the same date. Fees are what users pay the protocol; revenue is what the protocol keeps, as DeFiLlama defines it for each.">
+      <section className="blk"><h2 className="blk-t">By the numbers</h2><p className="blk-l">The players with a token, side by side on the same date. Fees are what users pay the protocol; revenue is what the protocol keeps, as DeFiLlama defines it for each.</p>
         <div className="fig overflow-x-auto">
           <table className="w-full min-w-[860px] text-[12.5px]">
             <thead>
@@ -136,12 +134,17 @@ export default async function WhoGetsPaid() {
             </tbody>
           </table>
         </div>
-        <Note>
+
+      </section>
+      <section className="blk blk-data">
+        <h2 className="blk-t">Data and method</h2>
+        <div className="method-b"><p>
           Revenue definitions differ by protocol, so read the revenue and multiple columns as a rough guide, not a like-for-like comparison. “n.m.” = not meaningful: DeFiLlama counts less than 1% of the protocol’s fees as revenue (Ethena).
           Morpho shows no revenue because its fee switch is off. Arbitrum&apos;s fees aren&apos;t shown: DeFiLlama tracks Arbitrum One, not Robinhood Chain.
           HOOD is a stock and isn&apos;t shown. Prices: CoinGecko. Fees, revenue, TVL: DeFiLlama.
-        </Note>
-      </Section>
+        </p></div>
+      </section>
     </main>
+    </div>
   );
 }

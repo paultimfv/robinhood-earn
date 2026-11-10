@@ -1,79 +1,79 @@
 import { earnAllocation, earnDepositors, earnDepositSizes, earnRwaShare, holders } from "@/lib/queries";
-import { Counter, Counters, Card, Section, Note, SimpleArea, SimpleLine, StackedBars, StackedColumns, BarsAndLine, CategoryBars } from "@/components/charts";
+import { Explorer, Linked, Rail, type Metric } from "@/components/explorer";
 import { fmtUsd, fmtPct } from "@/lib/fmt";
-import { Exhibit } from "@/components/exhibit";
 
 export const dynamic = "force-dynamic";
 
 const last = <T,>(a: T[]) => a[a.length - 1];
+const n = (v: unknown) => Number(v ?? 0);
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/* the market box in the diagram for each collateral */
+const MARKET: Record<string, string> = { USDe: "m1", syrupUSDG: "m2", mGLO: "m3", spUSDG: "m4" };
 
 export default async function EarnPage() {
   const [alloc, dep, sizes, rwa, hold] = await Promise.all([earnAllocation(), earnDepositors(), earnDepositSizes(), earnRwaShare(), holders()]);
-  const holderOf = (t: string) => Number(hold.find((r) => r.token === t)?.holders ?? 0);
-  const al = last(alloc);
-  const lastDay = last(alloc)?.day;
+  const al = last(alloc), d = last(dep);
+  const held = rwa.filter((r) => n(r.share) >= 0.001);
+  const day = String(al?.day ?? "").slice(0, 10);
+  const asOf = day ? `${Number(day.slice(8, 10))} ${MON[Number(day.slice(5, 7)) - 1]} ${day.slice(0, 4)}` : "";
+
+  const earn: Metric[] = [
+    { id: "tvl", node: { fig: "d1", id: "v" }, label: "Deposited in Earn", value: fmtUsd(n(al?.earn_tvl_usdg)),
+      note: "USDG in the Steakhouse vault behind Earn, by the collateral it is lent against.", chart: { kind: "columns", data: alloc, x: "day", y: "allocated_usdg", group: "collateral" } },
+    { id: "users", node: { fig: "d1", id: "u" }, label: "Users last week", value: n(d?.active_users).toLocaleString(),
+      note: "Wallets that deposited or withdrew that week, and the new ones among them.", chart: { kind: "line", data: dep, x: "week", ys: ["active_users", "new_users"], fmt: "raw" } },
+    { id: "all-users", node: { fig: "d1", id: "u" }, label: "Users, all time", value: n(sizes?.users).toLocaleString(),
+      note: "Distinct wallets that have ever held Earn shares.", chart: { kind: "area", data: dep, x: "week", y: "cumulative_users", fmt: "raw" } },
+    { id: "flows", node: { fig: "d1", id: "usdg" }, label: "Net flow last week", value: fmtUsd(n(d?.net_flow_usd)),
+      note: "Deposits each week (bars) and deposits minus withdrawals (line).", chart: { kind: "barsline", data: dep, x: "week", bar: "deposited_usd", line: "net_flow_usd" } },
+  ];
+  const collateral: Metric[] = [
+    { id: "mix", node: { fig: "d1", id: "b" }, label: "All collateral today", value: fmtUsd(held.reduce((a, r) => a + n(r.allocated_usdg), 0)),
+      note: "USDG lent against each collateral token right now.", chart: { kind: "cats", data: held, x: "collateral", y: "allocated_usdg" } },
+    ...held.map((r): Metric => {
+      const c = String(r.collateral);
+      const name = c.startsWith("0x") ? `Unlabelled market (${c}…)` : c;
+      return { id: `c-${c.toLowerCase()}`, node: MARKET[c] ? { fig: "d1", id: MARKET[c] } : undefined, label: name, value: fmtPct(n(r.share)),
+        note: `${fmtUsd(n(r.allocated_usdg))} of Earn's USDG is lent to borrowers who post ${c.startsWith("0x") ? "this token" : c}.`, chart: { kind: "area", data: alloc.filter((x) => x.collateral === c), x: "day", y: "allocated_usdg" } };
+    }),
+  ];
+  const sections = [{ id: "earn", label: "Deposits and users" }, { id: "collateral", label: "Collateral" }, { id: "data", label: "Data and method" }];
 
   return (
-    <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="sec-h">
-        <h1 className="sec-t page-t">Robinhood Earn</h1>
-        <div>
-          <p className="sec-l">Robinhood&apos;s onchain lending product: a normal app in front, a Steakhouse-curated Morpho vault underneath. Users, flows, and who borrows against what, read from Robinhood Chain.</p>
-          <p className="mt-3 text-[12px] text-muted">Research dashboard, data as of {String(lastDay ?? "").slice(0, 10)}</p>
-        </div>
-      </header>
+    <div className="page">
+      <Rail items={sections} />
+      <main className="page-main">
+        <header className="hero">
+          <h1 className="hero-t">Robinhood Earn</h1>
+          <p className="hero-l">Robinhood&apos;s lending product: a normal app in front, a Steakhouse-curated Morpho vault underneath. Users deposit USDG; borrowers post collateral to borrow it.</p>
+          <p className="hero-s"><span className="live">Data to <b>{asOf}</b></span><span>Robinhood Chain, Blockscout</span><span>Updated daily</span></p>
+        </header>
 
-      <Section n="01" tone="rh" title="Robinhood Earn: the distribution channel" lede="Steakhouse USDG vault (steakUSDG) on Robinhood Chain, the contract behind Robinhood Earn. Users = distinct share owners.">
-        <div className="grid gap-4">
-        <Exhibit id="d1" n={1} title="How Robinhood Earn works under the hood" lede="A Web2 front end on DeFi rails: the user taps Earn; their USDG sits in a self-custodial wallet and is lent through a Morpho vault curated by Steakhouse." source="Robinhood Earn support article; onchain, Robinhood Chain" />
-        </div>
-        <Track tag="Earn" title="Where the dollars go" note="users supply USDG; borrowers post collateral" accent
-          flow={["Earn deposits (USDG)", "Steakhouse USDG vault", "Morpho markets: USDe, syrupUSDG, mGLO, spUSDG"]}
-          foot={`Earn TVL ${fmtUsd(Number(al?.earn_tvl_usdg ?? 0))} · collateral today: ${rwa.map((r) => `${r.collateral} ${fmtPct(Number(r.share))}`).join(" · ")}. Who gets paid, and which of them have a token: see the Who gets paid tab.`} />
-        <Counters cols="md:grid-cols-4">
-          <Counter label="Earn users, all-time" value={Number(sizes?.users ?? 0).toLocaleString()} sub={`${Number(sizes?.deposits ?? 0).toLocaleString()} deposits · ${holderOf("steakUSDG (Earn)").toLocaleString()} current holders (Blockscout)`} />
-          <Counter label="Median deposit" value={fmtUsd(Number(sizes?.median_deposit ?? 0))} sub={`avg ${fmtUsd(Number(sizes?.avg_deposit ?? 0))} · p90 ${fmtUsd(Number(sizes?.p90_deposit ?? 0))}`} />
-          <Counter label="Active users, last week" value={Number(last(dep)?.active_users ?? 0).toLocaleString()} sub={`${Number(last(dep)?.new_users ?? 0).toLocaleString()} new`} />
-          <Counter label="Net flow, last week" value={fmtUsd(Number(last(dep)?.net_flow_usd ?? 0))} tone={Number(last(dep)?.net_flow_usd ?? 0) >= 0 ? "up" : "down"} />
-        </Counters>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card title="Earn users per week" sub="active, and new among them"><SimpleLine data={dep} x="week" ys={["active_users", "new_users"]} fmt="raw" /></Card>
-          <Card title="Earn deposits vs net flow" sub="weekly"><BarsAndLine data={dep} x="week" bar="deposited_usd" line="net_flow_usd" /></Card>
-          <Card title="Cumulative Earn users"><SimpleArea data={dep} x="week" y="cumulative_users" fmt="raw" /></Card>
-          <Card wide tone="maple" title="Robinhood Earn allocation by collateral" sub="USDG lent against each collateral today"><CategoryBars data={rwa.filter((r) => Number(r.share) >= 0.001)} x="collateral" y="allocated_usdg" /></Card>
-        </div>
-      </Section>
+        <section id="earn" className="blk">
+          <h2 className="blk-t">Deposits and users</h2>
+          <Linked label="Deposits and users" metrics={earn} figs={[{ id: "d1", title: "How Earn works", lede: "The user taps Earn. Their USDG sits in a self-custodial wallet and is lent through a Morpho vault curated by Steakhouse.", source: "Robinhood Earn support article; onchain, Robinhood Chain" }]} aside={
+            <dl className="facts">
+              <div><dt>Median deposit</dt><dd>{fmtUsd(n(sizes?.median_deposit))}</dd></div>
+              <div><dt>Average deposit</dt><dd>{fmtUsd(n(sizes?.avg_deposit))}</dd></div>
+              <div><dt>Deposits, all time</dt><dd>{n(sizes?.deposits).toLocaleString()}</dd></div>
+              <div><dt>Holding today</dt><dd>{n(hold.find((r) => r.token === "steakUSDG (Earn)")?.holders).toLocaleString()}</dd></div>
+            </dl>} />
+        </section>
 
-      <Section n="02" tone="rh" title="The collateral: what borrowers post" lede="Earn users supply USDG. Borrowers post a yield-bearing token as collateral and borrow it. The collateral mix decides which issuers grow with Earn.">
-        <Counters cols="md:grid-cols-4">
-          {rwa.filter((r) => Number(r.share) >= 0.001).slice(0, 4).map((r) => (
-            <Counter key={String(r.collateral)} label={`${r.collateral} share of Earn`} value={fmtPct(Number(r.share))} sub={`${fmtUsd(Number(r.allocated_usdg))} of USDG lent against it`} />
-          ))}
-        </Counters>
-        <Card wide tone="maple" title="Robinhood Earn TVL by collateral" sub="daily, onchain"><StackedColumns data={alloc} x="day" y="allocated_usdg" group="collateral" /></Card>
-        <Note>Who these collateral issuers are, how Earn pays them, and their token data: the Who gets paid tab.</Note>
-      </Section>
-    </main>
-  );
-}
+        <section id="collateral" className="blk">
+          <h2 className="blk-t">Collateral</h2>
+          <p className="blk-l">Borrowers post a yield-bearing token to borrow Earn&apos;s USDG. The mix decides which issuers grow with Earn. Who they are and how Earn pays them is on <a className="underline" href="/who-gets-paid">Who gets paid</a>.</p>
+          <Explorer label="Collateral" metrics={collateral} />
+        </section>
 
-function Track({ tag, title, note, flow, foot, accent }: { tag: string; title: string; note: string; flow: string[]; foot: string; accent?: boolean }) {
-  return (
-    <div className="fig" style={accent ? { borderTopWidth: 3, borderTopColor: "var(--accent)" } : undefined}>
-      <div className="flex items-baseline gap-2">
-        <span className={`text-[11.5px] font-medium ${accent ? "text-rh-ink" : "text-muted"}`}>{tag}</span>
-        <span className="text-[14px] font-semibold text-ink">{title}</span>
-        <span className="text-[11.5px] text-muted">· {note}</span>
-      </div>
-      <ol className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
-        {flow.map((f, i) => (
-          <li key={f} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-muted">→</span>}
-            <span className="rounded-full bg-surface px-2.5 py-1 text-ink">{f}</span>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-3 text-[11.5px] leading-relaxed text-muted">{foot}</p>
+        <section id="data" className="blk blk-data">
+          <h2 className="blk-t">Data and method</h2>
+          <div className="method-b">
+            <p><span className="text-ink-2">Vault.</span> Earn is the Steakhouse USDG vault (steakUSDG) on Robinhood Chain. Users are distinct share owners; deposits and withdrawals are its ERC-4626 events.</p>
+            <p><span className="text-ink-2">Collateral.</span> The vault&apos;s supply and withdraw events on each Morpho market, summed by the market&apos;s collateral token. Current holders from Blockscout.</p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

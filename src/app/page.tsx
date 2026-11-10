@@ -1,76 +1,78 @@
-import { stablecoinSupplyGlobal, llamaFeesByBucket, llamaFinanceProtocols, llamaFinanceWeekly, bsChain, capitalOnChain, stableSupply, stableSupplyLatest } from "@/lib/queries";
-import Link from "next/link";
-import { Counter, Counters, Card, Panel, Section, Note, StackedArea, StackedAreas, StackedColumns, SimpleArea, SimpleLine, Table } from "@/components/charts";
+import { stablecoinSupplyGlobal, llamaFeesByBucket, bsChain, capitalOnChain, stableSupply, stableSupplyLatest, earnAllocation, earnDepositors, earnDepositSizes } from "@/lib/queries";
+import { Explorer, type Metric } from "@/components/explorer";
+import { Diagrams } from "@/components/exhibit";
+import { Mini } from "@/components/mini";
 import { fmtUsd, fmtPct } from "@/lib/fmt";
-import { Exhibit } from "@/components/exhibit";
 
 export const dynamic = "force-dynamic";
 
+type R = Record<string, unknown>;
 const last = <T,>(a: T[]) => a[a.length - 1];
+const n = (v: unknown) => Number(v ?? 0);
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const yearAgo = (rows: R[], xk: string, k: string) => {
+  const lr = [...rows].reverse().find((x) => x[k] != null); if (!lr) return NaN;
+  const cut = new Date(new Date(String(lr[xk]).slice(0, 10)).getTime() - 365 * 864e5).toISOString().slice(0, 10);
+  const old = [...rows].reverse().find((x) => String(x[xk]).slice(0, 10) <= cut && x[k] != null);
+  return old && n(old[k]) ? n(lr[k]) / n(old[k]) - 1 : NaN;
+};
 
-export default async function Page() {
-  const [stableGlobal, buckets, finp, finw] = await Promise.all([stablecoinSupplyGlobal(), llamaFeesByBucket(), llamaFinanceProtocols(), llamaFinanceWeekly()]);
-  const [bs, cap, stables, stablesNow] = await Promise.all([bsChain(), capitalOnChain(), stableSupply(), stableSupplyLatest()]);
-  const stableTotal = stablesNow.filter((r) => r.kind === "stablecoin").reduce((a, r) => a + Number(r.supply), 0);
-  const ybTotal = stablesNow.filter((r) => r.kind === "yield-bearing").reduce((a, r) => a + Number(r.supply), 0);
-  const bsl = last(bs);
-  const cl = last(cap);
-  const sg = last(stableGlobal);
-  const sgYearAgo = stableGlobal.find((r) => String(r.day) >= String(Number(String(sg?.day).slice(0, 4)) - 1) + String(sg?.day).slice(4));
-  const lastDay = last(bs)?.day;
+/** The front page: what most people come for, and a way into every tab. */
+export default async function Home() {
+  const [stableGlobal, buckets, bs, cap, stables, stablesNow, alloc, dep, sizes] = await Promise.all([
+    stablecoinSupplyGlobal(), llamaFeesByBucket(), bsChain(), capitalOnChain(), stableSupply(), stableSupplyLatest(), earnAllocation(), earnDepositors(), earnDepositSizes(),
+  ]);
+  const tvl = [...new Map(alloc.map((r) => [String(r.day), { day: r.day, earn_tvl_usdg: r.earn_tvl_usdg }])).values()];
+  const stableTotal = stablesNow.filter((r) => r.kind === "stablecoin").reduce((a, r) => a + n(r.supply), 0);
+  const bsl = last(bs), cl = last(cap), sg = last(stableGlobal), d = last(dep);
+  const fin = buckets.filter((b) => b.bucket === "finance");
+  const day = String(bsl?.day ?? "").slice(0, 10);
+  const asOf = day ? `${Number(day.slice(8, 10))} ${MON[Number(day.slice(5, 7)) - 1]} ${day.slice(0, 4)}` : "";
+
+  const glance: Metric[] = [
+    { id: "earn", label: "Deposited in Robinhood Earn", value: fmtUsd(n(last(tvl)?.earn_tvl_usdg)),
+      note: "USDG in the Steakhouse vault behind Earn, daily.", chart: { kind: "area", data: tvl, x: "day", y: "earn_tvl_usdg" } },
+    { id: "users", label: "Earn users, all time", value: n(sizes?.users).toLocaleString(),
+      note: "Distinct wallets that have ever held Earn shares.", chart: { kind: "area", data: dep, x: "week", y: "cumulative_users", fmt: "raw" } },
+    { id: "stables", label: "Stablecoins on Robinhood Chain", value: fmtUsd(stableTotal),
+      note: "Each token's totalSupply() on the chain, daily.", chart: { kind: "columns", data: stables, x: "day", y: "supply", group: "token" } },
+    { id: "capital", label: "Capital on chain", value: fmtUsd(n(cl?.capital_onchain_usd)),
+      note: "USDG minted on the chain plus ETH bridged from Ethereum.", chart: { kind: "areas", data: cap, x: "day", ys: ["usdg_native", "eth_bridged_usd"] } },
+    { id: "txns", label: "Transactions a day", value: n(bsl?.txns).toLocaleString(),
+      note: "From Blockscout.", chart: { kind: "area", data: bs, x: "day", y: "txns", fmt: "raw" } },
+    { id: "global", label: "Stablecoins, all chains", value: fmtUsd(n(sg?.supply_usd)), change: yearAgo(stableGlobal, "day", "supply_usd"),
+      note: "The market Earn and the chain grow with. DeFiLlama, weekly.", chart: { kind: "area", data: stableGlobal, x: "day", y: "supply_usd" } },
+  ];
 
   return (
-    <main className="mx-auto max-w-6xl space-y-12 px-4 py-10">
-      <header className="sec-h">
-        <h1 className="sec-t page-t">Robinhood Chain</h1>
-        <div>
-          <p className="sec-l">Stablecoins, activity, fees and capital on Robinhood Chain, read from Ethereum and Robinhood Chain RPC and Blockscout. DeFiLlama where marked.</p>
-          <p className="mt-3 text-[12px] text-muted">Research dashboard, data as of {String(lastDay).slice(0, 10)}</p>
-        </div>
-      </header>
+    <div className="page page-solo">
+      <main className="page-main">
+        <section className="blk">
+          <header className="hero">
+            <h1 className="hero-t">Robinhood Chain and Earn</h1>
+            <p className="hero-l">Robinhood runs its own chain and a lending product on it. This tracks both from onchain data.</p>
+            <p className="hero-s"><span className="live">Data to <b>{asOf}</b></span><span>Robinhood Chain, Ethereum, Blockscout, DeFiLlama</span><span>Updated daily</span></p>
+          </header>
+          <Explorer label="Highlights" metrics={glance} />
+        </section>
 
-      <Section n="01" tone="rh" title="Stablecoins" lede="Onchain credit scales with the dollars onchain. Global supply is the model's top-line driver (DeFiLlama, all chains, USD-pegged); Robinhood Chain supply is read from each token's totalSupply().">
-        <Counters cols="md:grid-cols-3">
-          <Counter label="Global stablecoin supply" value={fmtUsd(Number(sg?.supply_usd ?? 0))} sub={sgYearAgo ? `+${fmtPct(Number(sg?.supply_usd) / Number(sgYearAgo.supply_usd) - 1)} year on year · DeFiLlama` : "DeFiLlama"} />
-          <Counter label="Stablecoins on Robinhood Chain" value={fmtUsd(stableTotal)} sub={`${fmtPct(stableTotal / Number(sg?.supply_usd || 1))} of global · ${stablesNow.filter((r) => r.kind === "stablecoin").map((r) => `${r.token} ${fmtUsd(Number(r.supply))}`).join(" · ")}`} />
-          <Counter label="Yield-bearing on Robinhood Chain" value={fmtUsd(ybTotal)} sub="syrupUSDG, mGLO" />
-        </Counters>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card title="Global stablecoin supply" sub="weekly · DeFiLlama"><SimpleArea data={stableGlobal} x="day" y="supply_usd" /></Card>
-          <Card title="Stablecoin supply on Robinhood Chain" sub="totalSupply, daily"><StackedColumns data={stables} x="day" y="supply" group="token" /></Card>
-        </div>
-      </Section>
+        <section className="blk">
+          <h2 className="blk-t">Across the site</h2>
+          <div className="minis">
+            <Mini href="/earn#flows" where="Robinhood Earn" label="Earn deposits last week" value={fmtUsd(n(d?.deposited_usd))} data={dep} x="week" y="deposited_usd" kind="bars" />
+            <Mini href="/earn#users" where="Robinhood Earn" label="Earn users last week" value={n(d?.active_users).toLocaleString()} data={dep} x="week" y="active_users" />
+            <Mini href="/chain#accounts" where="Robinhood Chain" label="Active accounts a day" value={n(bsl?.active_accounts).toLocaleString()} data={bs} x="day" y="active_accounts" />
+            <Mini href="/chain#gas" where="Robinhood Chain" label="Gas fees a day" value={fmtUsd(n(bsl?.fees_usd))} data={bs} x="day" y="fees_usd" kind="bars" />
+            <Mini href="/chain#fee-share" where="Robinhood Chain" label="Finance share of app fees" value={fmtPct(n(last(fin)?.share))} data={fin} x="week" y="share" />
+            <Mini href="/chain#wallets" where="Robinhood Chain" label="New smart wallets a day" value={n(bsl?.new_aa_wallets).toLocaleString()} data={bs} x="day" y="new_aa_wallets" kind="bars" />
+          </div>
+        </section>
 
-      <Section n="02" tone="rh" title="Robinhood Chain" lede="Activity, fees and bridged capital are read from the chain (Blockscout stats, L1 bridge and sequencer-inbox contracts on Ethereum, ETH price). DeFiLlama is used only where marked: protocol-level TVL and app-fee categories.">
-        <Exhibit id="d2" n={2} title="Value flow on Robinhood Chain" lede="Two separate streams: gas goes to the chain, app fees stay with the apps." source="Robinhood Chain docs; ArbitrumDAO factsheet; Ethereum SequencerInbox" />
-        <Counters cols="md:grid-cols-4">
-          <Counter label="Capital on chain" value={fmtUsd(Number(cl?.capital_onchain_usd ?? 0))} sub={`${fmtUsd(Number(cl?.eth_bridged_usd ?? 0))} ETH bridged · ${fmtUsd(Number(cl?.usdg_native ?? 0))} USDG minted`} />
-          <Counter label="DeFi TVL (DeFiLlama)" value={fmtUsd(Number(cl?.llama_tvl_usd ?? 0))} sub="protocol-sum, different definition" />
-          <Counter label="Transactions / day" value={Number(bsl?.txns ?? 0).toLocaleString()} sub={`${Number(bsl?.active_accounts ?? 0).toLocaleString()} active accounts · ${Number(bsl?.new_accounts ?? 0).toLocaleString()} new`} />
-          <Counter label="Sequencer fees / day" value={fmtUsd(Number(bsl?.fees_usd ?? 0))} sub={bsl?.l1_cost_usd != null ? `L1 cost ${fmtUsd(Number(bsl.l1_cost_usd))} · margin ${fmtUsd(Number(bsl.sequencer_margin_usd))}` : `${Number(bsl?.fees_eth ?? 0).toFixed(1)} ETH`} />
-        </Counters>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card title="Capital on Robinhood Chain" sub="onchain: USDG minted + ETH bridged from Ethereum"><StackedAreas data={cap} x="day" ys={["usdg_native", "eth_bridged_usd"]} /></Card>
-          <Card title="Transactions per day"><SimpleArea data={bs} x="day" y="txns" fmt="raw" /></Card>
-          <Card title="Accounts per day" sub="active, and new among them · Aug 11–12 spike is a one-off wave of new accounts"><SimpleLine data={bs} x="day" ys={["active_accounts", "new_accounts"]} fmt="raw" /></Card>
-          <Card title="Gas fees per day" sub="paid to the sequencer, USD · early-September spike is real (1,400–3,300 ETH/day)"><SimpleArea data={bs} x="day" y="fees_usd" /></Card>
-          <Card title="New smart wallets per day" sub="ERC-4337"><SimpleArea data={bs} x="day" y="new_aa_wallets" fmt="raw" /></Card>
-          <Card title="Fee share: speculation vs finance" sub="weekly · DeFiLlama"><StackedArea data={buckets} x="week" y="share" group="bucket" fmt="pct" /></Card>
-          <Card title="Fees: speculation vs finance" sub="weekly, USD · DeFiLlama"><StackedColumns data={buckets} x="week" y="fees_usd" group="bucket" /></Card>
-        </div>
-        <Note>Buckets by DeFiLlama category. <span className="text-ink-2">Speculation</span> = DEXs, aggregators, perps, prediction markets, launchpads, meme, Telegram bots, gamified mining, NFT marketplaces. <span className="text-ink-2">Finance</span> = lending, risk curators, RWA, yield, capital allocators, payments. <span className="text-ink-2">Other</span> (grey, ~1%) = bridges, wallets, interfaces, AI agents, indexes.</Note>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card title="Lending / Earn protocol fees" sub="weekly · DeFiLlama"><StackedColumns data={finw} x="week" y="fees_usd" group="protocol" /></Card>
-          <Panel title="Lending / Earn protocols by fees" sub="last 7 days · DeFiLlama">
-            <Table rows={finp} cols={[
-              { key: "protocol", title: "protocol" }, { key: "category", title: "category" },
-              { key: "fees_7d", title: "fees 7d", fmt: "usd" }, { key: "revenue_7d", title: "revenue 7d", fmt: "usd" }, { key: "fee_share", title: "share", fmt: "pct" },
-            ]} />
-          </Panel>
-        </div>
-      </Section>
-
-      <Note>Robinhood Earn, the lending product built on the chain, has its own page: <Link href="/earn" className="text-ink-2 underline underline-offset-2 hover:text-ink">Robinhood Earn</Link>.</Note>
-    </main>
+        <section className="blk">
+          <h2 className="blk-t">How Earn works</h2>
+          <Diagrams figs={[{ id: "d1", title: "From the app to the borrower", lede: "The user taps Earn. Their USDG sits in a self-custodial wallet and is lent through a Morpho vault curated by Steakhouse.", source: "Robinhood Earn support article; onchain, Robinhood Chain" }]} />
+        </section>
+      </main>
+    </div>
   );
 }

@@ -375,7 +375,7 @@ export async function stockCreditWeekly() {
 export async function earnRwaShare() {
   const rows = await q(`
     WITH cum AS (
-      SELECT m.collateral, SUM(CASE WHEN f.kind = 'supply' THEN f.assets ELSE -f.assets END) AS a
+      SELECT COALESCE(m.collateral, left(m.collateral_token, 10)) AS collateral, SUM(CASE WHEN f.kind = 'supply' THEN f.assets ELSE -f.assets END) AS a
       FROM morpho_flows f JOIN morpho_markets m ON m.market_id = f.market_id WHERE f.on_behalf = $1 GROUP BY 1
     )
     SELECT collateral, GREATEST(a, 0) AS allocated_usdg, GREATEST(a, 0) / NULLIF(SUM(GREATEST(a, 0)) OVER (), 0) AS share FROM cum ORDER BY a DESC`, [EARN_VAULT]);
