@@ -50,7 +50,6 @@ export default async function Home() {
         <section className="blk">
           <header className="hero">
             <h1 className="hero-t">Robinhood Chain and Earn</h1>
-            <p className="hero-l">Robinhood runs its own chain and a lending product on it. This tracks both from onchain data.</p>
             <p className="hero-s"><span className="live">Data to <b>{asOf}</b></span><span>Robinhood Chain, Ethereum, Blockscout, DeFiLlama</span><span>Updated daily</span></p>
           </header>
           <Explorer label="Highlights" metrics={glance} />
@@ -70,7 +69,7 @@ export default async function Home() {
 
         <section className="blk">
           <h2 className="blk-t">How Earn works</h2>
-          <Diagrams figs={[{ id: "d1", title: "From the app to the borrower", lede: "The user taps Earn. Their USDG sits in a self-custodial wallet and is lent through a Morpho vault curated by Steakhouse.", source: "Robinhood Earn support article; onchain, Robinhood Chain" }]} />
+          <Diagrams figs={[{ id: "d1", title: "From the app to the borrower", source: "Robinhood Earn support article; onchain, Robinhood Chain" }]} />
         </section>
       </main>
     </div>
