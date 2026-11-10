@@ -56,7 +56,7 @@ export default async function Home() {
         </section>
 
         <section className="blk">
-          <h2 className="blk-t">Across the site</h2>
+          <h2 className="blk-t">Highlights</h2>
           <div className="minis">
             <Mini href="/earn#flows" where="Robinhood Earn" label="Earn deposits last week" value={fmtUsd(n(d?.deposited_usd))} data={dep} x="week" y="deposited_usd" kind="bars" />
             <Mini href="/earn#users" where="Robinhood Earn" label="Earn users last week" value={n(d?.active_users).toLocaleString()} data={dep} x="week" y="active_users" />
