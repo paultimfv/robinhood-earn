@@ -3,7 +3,7 @@ import * as Q from "@/lib/queries";
 import { stableSupply as llamaStable } from "@/lib/llama";
 import { table, fromJson, contextResponse } from "@/lib/ask-context";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 21600; // data updates daily; cache 6h so each view does not query Neon
 
 export async function GET() {
   const [stableGlobal, buckets, finp, finw, bs, cap, stables, stablesNow] = await Promise.all([

@@ -3,7 +3,7 @@ import { protocolStats, stableSupply, tokens, type ProtocolStats, type TokenStat
 import { Card, CategoryBars } from "@/components/charts";
 import { fmtUsd, fmtPct } from "@/lib/fmt";
 
-export const revalidate = 300;
+export const revalidate = 21600;
 
 const last = <T,>(a: T[]) => a[a.length - 1];
 
